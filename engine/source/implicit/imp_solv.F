@@ -307,7 +307,6 @@ C---R_IMP[21:rel res disp.,22:relative residual \1,23:relative residual \1,24:cu
 C---------20-25:libre
 C---I_IMP[1:IT(TOTAL),2:ITC,3:IT0(IT_OLD),4:IWAIT,5:IDIV,6:NDDLI0,7:1ercontact(used only w/ IREFI=4),
 C---8:num. of diverging, 9:ICONT_OLD 10:Isign (Riks);11: Ichang(solver);12: IDIV_OLD;13: NDDLI(SMP) or NDDLI_G(SPMD)
-#if defined(MUMPS5)
 C----------------------------------------------
 C   L o c a l   V a r i a b l e s
 C-----------------------------------------------
@@ -782,6 +781,16 @@ c          NGDONE = 1
      7     WA        ,IDDL      ,NDOF      ,DIAG_K    ,LT_K      ,
      8     IADK      ,JDIK      ,IKG       ,IBID      ,ITASK     ,
      9     ELBUF_TAB ,STACK     ,DRAPE_SH4N, DRAPE_SH3N   ,DRAPEG )
+C       ==============================================================
+C       DUMP PURE STIFFNESS AND MASS HERE <<<
+        CALL DUMP_IMPLICIT_DATA(NDDL, NNZK, IADK, JDIK, DIAG_K,
+     .                          LT_K, NDDLI, NNZI, IADI, JDII,
+     .                          ITOK, DIAG_I, LT_I, LB, NUMNOD,
+     .                          IDDL, NDOF, MS, IN)
+        WRITE(6,*) "Pure Stiffness and Mass dumped successfully. Exiting."
+        CALL FLUSH(6)
+        CALL ARRET(0)
+C       ==============================================================
 C
 C    /---------------/
 c      CALL MY_BARRIER
@@ -1308,7 +1317,7 @@ C        WRITE(6,*) IMUMPSV,IDSC,IMCONV
 #else
         WRITE(6,*) "Fatal error: MUMPS is required"
         CALL FLUSH(6)
-        CALL ARRET(5)
+        CALL ARRET(0)
 #endif
         CALL CP_REAL_HP(NDDL,LB,LBB)
 C--------PCG w/ Projection----
@@ -1977,9 +1986,9 @@ c
  1011   FORMAT(5X,' WITH DIM. : ND   =',I8)
  1012   FORMAT(3X,'**TIMESTEP WILL BE REDUCED DUE TO ',
      .            'DIM.(ND) CHANGE W/AUTOSPC::**',2I8)
+        WRITE(6,*) "TRACE: END OF IMP_SOLV"
+        CALL FLUSH(6)
         RETURN
-C endif MUMPS defined
-#endif
       END
 !||====================================================================
 !||    imp_stop       ../engine/source/implicit/imp_solv.F

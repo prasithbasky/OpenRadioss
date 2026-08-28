@@ -1148,6 +1148,8 @@ C--- boundary), keeping previously split nodes across multiple split events.
               INTEGER, DIMENSION(:), ALLOCATABLE :: CDDLP
 #if defined(MUMPS5)
               TYPE(DMUMPS_STRUC) MUMPS_PAR
+#else
+              INTEGER MUMPS_PAR
 #endif
               INTEGER IFVMESH
 C
@@ -2366,7 +2368,7 @@ C       IMPLICIT SIZES [MONO THREAD]
 C       Double precision only
 C----------------------------------
               IF (IMPL_S==1.OR.NEIG>0) THEN
-#if defined(MYREAL8) && !defined(WITHOUT_LINALG)
+#if defined(MYREAL8)
                 ALLOCATE (ELBUF_IMP(NGROUP))
                 CALL ALLOC_ELBUF_IMP(ELBUF_TAB,ELBUF_IMP,NGROUP, IPARG)
                 IF (IMON>0) CALL STARTIME(TIMERS,34)
@@ -2399,10 +2401,6 @@ C
                 IF (IMUMPSV >0.OR.(ISOLV==7.AND.NSPMD>1)) THEN
 #if defined(MUMPS5)
                   CALL SPMD_MUMPS_INI(MUMPS_PAR, 1)
-#else
-                  WRITE(6,*) __LINE__,"Fatal error: MUMPS required"
-                  CALL FLUSH(6)
-                  CALL ARRET(5)
 #endif
                   ALLOCATE(CDDLP(NDDL0))
                 ENDIF
@@ -8648,7 +8646,7 @@ C===============================================================================
 C-----integer : 1:IKC,2:IKUD,3:W_DDL,4:IADM,5:JDIM,6:NDOFI,7:IDDLI
 C-----reel : 1,2,3,4:DIAG_K,LT_K,DIAG_M,LT_M,5,6:LB,DB,7:BKUD,8,9:D_IMP,DR_IMP
 C----       10,11,12:ELBUF_C,BUFMAT_C,X_C,13,14:DD,DDR,15,16:X_ac,V_zero,23,24:AC,ACR
-#if defined(MUMPS5)
+C
                   CALL IMP_SOLV(OUTPUT,TIMERS, PYTHON,
      1            NODES%ICODE  ,NODES%ISKEW  ,ISKWN  ,IPART  ,IXTG   ,IXS    ,IXQ    ,
      2            ELEMENT%SHELL%IXC    ,IXT    ,IXP    ,IXR    ,IXTG1          ,NODES%ITAB   ,NODES%ITABM1 ,
@@ -8679,16 +8677,12 @@ C----       10,11,12:ELBUF_C,BUFMAT_C,X_C,13,14:DD,DDR,15,16:X_ac,V_zero,23,24:A
      Z            H3D_DATA,MULTI_FVM,IGRBRIC,IGRSH4N,IGRSH3N,IGRBEAM,FORNEQS,MAXDGAP,
      A            NDDL0   ,NNZK0 ,IT_T   ,IMPBUF_TAB,CPTREAC,FTHREAC,NODREAC, DRAPEG,
      B            INTERFACES,OUTPUT%TH%TH_SURF,DPL0CLD,VEL0CLD,SNPC,STF,GLOB_THERM,OUTPUT%TH%WFEXT_MD)
-#else
-                  WRITE(6,*) __LINE__,"Fatal error: MUMPS required"
-                  CALL FLUSH(6)
-                  CALL ARRET(5)
-#endif
+C
 C Modes buckling
                   IF (NBUCK>0) IBUCK=1
                 ELSEIF (IBUCK>0) THEN
 C
-#if defined(MUMPS5) && defined(DNC)
+C
                   IF (IMPL_S > 0 .AND. ISMDISP >0) THEN
                     CALL ASSIGN_PTR(ptrX,IMPBUF_TAB%X_A,3,numnod)
                   ELSE
@@ -8728,11 +8722,7 @@ C
      Z            DRAPE_SH3N     ,H3D_DATA       ,SUBSETS    ,IGRNOD    ,     FCONT_MAX,
      A            OUTPUT%DATA%VECT_PCONT2,OUTPUT%DATA%VECT_PCONT2_2,NDDL0    ,NNZK0     ,IMPBUF_TAB ,
      B            DRAPEG         ,MAT_ELEM%MAT_PARAM  ,GLOB_THERM, OUTPUT )
-#else
-                  WRITE(6,*) __LINE__,"Fatal error: MUMPS required"
-                  CALL FLUSH(6)
-                  CALL ARRET(5)
-#endif
+C
 
                   IF (IDYNA==0.AND.ITSK==0) CALL CP_DM(NUMGEO,GEO,IGEO,DMCP,2)
                   MSTOP=2
@@ -9298,7 +9288,7 @@ C--- //0 ----------------
                 MSTOP_DT_THERM = 1
               ENDIF
 
-#if defined(MYREAL8) && !defined(WITHOUT_LINALG)
+#if defined(MYREAL8)
  300          CONTINUE
 #endif
 

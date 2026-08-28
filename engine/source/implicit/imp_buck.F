@@ -216,11 +216,15 @@ C-----------------------------------------------
       TYPE (MATPARAM_STRUCT_) ,DIMENSION(NUMMAT) ,INTENT(IN) :: MATPARAM_TAB
       type (glob_therm_) ,intent(inout)       :: glob_therm
       TYPE(OUTPUT_),INTENT(INOUT) :: OUTPUT
-#if defined(MUMPS5) && defined(DNC)
+C #if defined(MUMPS5) && defined(DNC)
 C-----------------------------------------------
 C   L o c a l   V a r i a b l e s
 C-----------------------------------------------
+#if defined(MUMPS5)
       TYPE(DMUMPS_STRUC) MUMPS_PAR
+#else
+      INTEGER MUMPS_PAR
+#endif
       INTEGER I, NM, NMMAX, MAXITR, N, MAXNCV, NEV, NCV, MAXN,
      .        MAXNEV, LDV, ISHFTS, MODE, INFO, PRSP,
      .        NEL3D, NEL2D, NEL1D, NEL, N1, N2, N3, N4, N5, N6, N7, N8,
@@ -295,6 +299,10 @@ C------------------------------------------------------------
       L1 = 1+NIXS*NUMELS
       L2 = L1+6*NUMELS10
       L3 = L2+12*NUMELS20
+      WRITE(ISTDO,*) "TRACE: 0 START OF IMP_BUCK. NDDL0=", NDDL0, " NNZK0=", NNZK0
+      WRITE(IOUT,*) "TRACE: 0 START OF IMP_BUCK. NDDL0=", NDDL0, " NNZK0=", NNZK0
+      CALL FLUSH(ISTDO)
+      CALL FLUSH(IOUT)
 citask0      IF (ITASK == 0) THEN
 
        IF (ISPMD==0) THEN
@@ -390,8 +398,10 @@ C
        NGDONE = 1
        IKG=0
 C    /---------------/
-c      CALL MY_BARRIER
-C    /---------------/
+        WRITE(ISTDO,*) "TRACE: 1 BEFORE IMP_GLOB_KHP(1)"
+        WRITE(IOUT,*) "TRACE: 1 BEFORE IMP_GLOB_KHP(1)"
+        CALL FLUSH(ISTDO)
+        CALL FLUSH(IOUT)
        CALL IMP_GLOB_KHP(
      1   PM        ,GEO       ,IPM       ,IGEO      ,ELBUF     ,
      2   IXS       ,IXQ       ,IXC       ,IXT       ,IXP       ,
@@ -407,7 +417,10 @@ c      CALL MY_BARRIER
 C    /---------------/
 
 citask0       IF (ITASK == 0) THEN
-
+        WRITE(ISTDO,*) "TRACE: 2 BEFORE UPD_GLOB_K(1)"
+        WRITE(IOUT,*) "TRACE: 2 BEFORE UPD_GLOB_K(1)"
+        CALL FLUSH(ISTDO)
+        CALL FLUSH(IOUT)
        CALL UPD_GLOB_K(
      1   ICODT     ,ICODR     ,ISKEW     ,IBFV      ,NPC       ,
      2   TF        ,VEL       ,XFRAME    ,
@@ -454,8 +467,10 @@ C
       NGDONE = 1
       IKG=1
 C    /---------------/
-c      CALL MY_BARRIER
-C    /---------------/
+        WRITE(ISTDO,*) "TRACE: 3 BEFORE IMP_GLOB_KHP(2)"
+        WRITE(IOUT,*) "TRACE: 3 BEFORE IMP_GLOB_KHP(2)"
+        CALL FLUSH(ISTDO)
+        CALL FLUSH(IOUT)
       CALL IMP_GLOB_KHP(
      1   PM        ,GEO       ,IPM       ,IGEO      ,ELBUF     ,
      2   IXS       ,IXQ       ,IXC       ,IXT       ,IXP       ,
@@ -479,6 +494,10 @@ C--------include load-stiffness matrix-in Kg---------
      3                  IDDL  ,NDOF   ,IADK  ,JDIK  ,DIAG_KG,
      4                  LT_KG )
       END IF
+        WRITE(ISTDO,*) "TRACE: 4 BEFORE UPD_GLOB_K(2)"
+        WRITE(IOUT,*) "TRACE: 4 BEFORE UPD_GLOB_K(2)"
+        CALL FLUSH(ISTDO)
+        CALL FLUSH(IOUT)
       CALL UPD_GLOB_K(
      1   ICODT     ,ICODR     ,ISKEW     ,IBFV      ,NPC       ,
      2   TF        ,VEL       ,XFRAME    ,
@@ -503,10 +522,43 @@ C
        DO I=1,NDDL
          DIAG_KG(I)=-(DIAG_KG(I)-DIAG_K(I))
        ENDDO
+        WRITE(ISTDO,*) "TRACE: 5 BEFORE LT_KG LOOP"
+        WRITE(IOUT,*) "TRACE: 5 BEFORE LT_KG LOOP"
+        CALL FLUSH(ISTDO)
+        CALL FLUSH(IOUT)
        DO I=1,NNZK
          LT_KG(I)=-(LT_KG(I)-LT_K(I))
        ENDDO
 C
+        WRITE(ISTDO,*) "*** DUMPING BUCKLING MATRICES TO implicit_matrices.bin ***"
+        WRITE(IOUT,*) "*** DUMPING BUCKLING MATRICES TO implicit_matrices.bin ***"
+        CALL FLUSH(ISTDO)
+        CALL FLUSH(IOUT)
+       OPEN(UNIT=99, FILE='implicit_matrices.bin', FORM='UNFORMATTED')
+       WRITE(99) NDDL, NNZK
+       WRITE(99) IADK(1:NDDL+1)
+       WRITE(99) JDIK(1:NNZK)
+       WRITE(99) DIAG_K(1:NDDL)
+       WRITE(99) LT_K(1:NNZK)
+       WRITE(99) NDDL, NNZK
+       WRITE(99) IADK(1:NDDL+1)
+       WRITE(99) JDIK(1:NNZK)
+       WRITE(99) DIAG_KG(1:NDDL)
+       WRITE(99) LT_KG(1:NNZK)
+       WRITE(99) LB(1:NDDL)
+       WRITE(99) NUMNOD
+       WRITE(99) IDDL(1:NUMNOD)
+       WRITE(99) NDOF(1:NUMNOD)
+       WRITE(99) MS(1:NUMNOD)
+       WRITE(99) IN(1:NUMNOD)
+       CLOSE(99)
+       WRITE(ISTDO,*) "Matrix Dump complete, stopping engine."
+       WRITE(IOUT,*) "Matrix Dump complete, stopping engine."
+       CALL FLUSH(ISTDO)
+       CALL FLUSH(IOUT)
+       CALL ARRET(0)
+C
+#if defined(MUMPS5) && defined(DNC)
       IF (BISOLV>=2) THEN
          WRITE(6,*) "/IMPL/GRAPH is deprecated"
          CALL ARRET(5)
@@ -915,6 +967,7 @@ C
          ENDIF
       ENDDO
 c
+#endif
       DEALLOCATE(DIAG_KG, LT_KG, VECT, EIG)
 
       DO I=1,NUMNOD
@@ -927,7 +980,7 @@ citask0      END IF !(ITASK == 0) THEN
 
 C
       RETURN
-#endif 
+C #endif 
       END
 
 !||====================================================================

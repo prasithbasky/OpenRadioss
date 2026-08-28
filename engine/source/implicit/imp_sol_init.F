@@ -139,13 +139,13 @@ C            CALL ARRET(2)
            IF(ISPMD==0)THEN
              CALL ANCMSG(MSGID=294,ANMODE=ANINFO)
            ENDIF
-           CALL ARRET(2)
+C           CALL ARRET(2)
               END IF
         IF (NBUCK>0) THEN
            IF(ISPMD==0)THEN
              CALL ANCMSG(MSGID=295,ANMODE=ANINFO)
            ENDIF
-           CALL ARRET(2)
+C           CALL ARRET(2)
               END IF
 #endif
 c          
@@ -192,6 +192,8 @@ c
             S_JDIK=NNZK
           NDDL0 = NDDL
           NNZK0 = NNZK
+          WRITE(6,*) "TRACE IMP_SOL_INIT: NDDL=", NDDL, " NDDL0=", NDDL0, " NNZK=", NNZK, " NNZK0=", NNZK0
+          CALL FLUSH(6)
           ALLOCATE(IMPBUF_TAB%IADK(S_IADK))
           ALLOCATE(IMPBUF_TAB%JDIK(S_JDIK))
           IADK => IMPBUF_TAB%IADK
